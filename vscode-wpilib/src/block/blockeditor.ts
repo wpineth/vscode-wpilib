@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-// import * as FS from 'fs';
+import * as FS from 'fs';
 // import * as path from 'path';
 
 export class BlockEditorProvider implements vscode.CustomTextEditorProvider {
@@ -32,7 +32,7 @@ export class BlockEditorProvider implements vscode.CustomTextEditorProvider {
         webviewPanel.webview.options = {
             enableScripts: true,
         };
-        webviewPanel.webview.html = this.getHtmlForWebview(webviewPanel.webview);
+        webviewPanel.webview.html = this.getHtmlForWebview(document, webviewPanel.webview);
 
         let has_loaded = false;
 
@@ -70,12 +70,14 @@ export class BlockEditorProvider implements vscode.CustomTextEditorProvider {
         webviewPanel.webview.onDidReceiveMessage((e) => {
             switch (e.type) {
                 case 'replace':
-                    const edit = new vscode.WorkspaceEdit();
-                    // Just replace the entire document every time for this example extension.
-                    // A more complete extension should compute minimal edits instead.
-                    edit.replace(document.uri, new vscode.Range(document.lineAt(0).range.start, document.lineAt(document.lineCount - 1).range.end), e.body);
-            
-                    vscode.workspace.applyEdit(edit);
+                    if(document.getText() !== e.body){
+                        const edit = new vscode.WorkspaceEdit();
+                        // Just replace the entire document every time for this example extension.
+                        // A more complete extension should compute minimal edits instead.
+                        edit.replace(document.uri, new vscode.Range(document.lineAt(0).range.start, document.lineAt(document.lineCount - 1).range.end), e.body);
+                
+                        vscode.workspace.applyEdit(edit);
+                    }
 
                     break;
             }
@@ -87,13 +89,35 @@ export class BlockEditorProvider implements vscode.CustomTextEditorProvider {
     /**
      * Get the static html used for the editor webviews.
      */
-    private getHtmlForWebview(webview: vscode.Webview): string {
-        // Blockly imports...
-        const blocklyUri = webview.asWebviewUri(vscode.Uri.joinPath(this.context.extensionUri, './node_modules/blockly/blockly_compressed.js'));
-        const blocklyBlocksUri = webview.asWebviewUri(vscode.Uri.joinPath(this.context.extensionUri, './node_modules/blockly/blocks_compressed.js'));
-        const blocklyJavascriptGeneratorUri = webview.asWebviewUri(vscode.Uri.joinPath(this.context.extensionUri, './node_modules/blockly/javascript_compressed.js'));
-        const blocklyEnUri = webview.asWebviewUri(vscode.Uri.joinPath(this.context.extensionUri, './node_modules/blockly/msg/en.js'));
+    private getHtmlForWebview(
+        document: vscode.TextDocument,
+        webview: vscode.Webview
+    ): string {
 
+        vscode.workspace.findFiles('**/.blockcfg').then((uris) => {
+            const directories = uris.map((uri) => uri.fsPath.replace(/\.blockcfg$/gm, '')).sort((a, b) => b.length - a.length);
+
+            if(uris.length > 0){
+                console.log(document.uri.fsPath, directories.filter((directory) => {
+                    return document.uri.fsPath.startsWith(directory);
+                }));
+                //add defineables
+                for(let i = 0; i < uris.length; i++){
+                    const uri = uris[i];
+
+                    console.log(FS.readFileSync(uri.fsPath).toString().split('\n').map((line) => line.trim()).filter((line) => {
+                        return line.length > 0 && !line.startsWith('#');
+                    }))
+                }
+            }
+        });
+
+        // Blockly imports...
+        const blocklyPythonGeneratorUri = webview.asWebviewUri(vscode.Uri.joinPath(this.context.extensionUri, './node_modules/blockly/python_compressed.js'));
+        const blocklyUri = webview.asWebviewUri(vscode.Uri.joinPath(this.context.extensionUri, './node_modules/blockly/blockly_compressed.js'));
+        const blocklyJavaGeneratorUri = webview.asWebviewUri(vscode.Uri.joinPath(this.context.extensionUri, './resources/block/java.js'));
+        const blocklyBlocksUri = webview.asWebviewUri(vscode.Uri.joinPath(this.context.extensionUri, './node_modules/blockly/blocks_compressed.js'));
+        const blocklyEnUri = webview.asWebviewUri(vscode.Uri.joinPath(this.context.extensionUri, './node_modules/blockly/msg/en.js'));
 
         // Local path to script and css for the webview
         const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(this.context.extensionUri, './resources/block/block.js'));
@@ -111,21 +135,22 @@ export class BlockEditorProvider implements vscode.CustomTextEditorProvider {
         // const nonce = getNonce();
 
         return `
-		<!DOCTYPE html>
+        <!DOCTYPE html>
         <html>
-			<head>
+            <head>
                 <meta http-equiv="Content-Security-Policy">
-				<title>WPILib Block Environment</title>
-				<script src="${blocklyUri}"></script>
-				<script src="${blocklyBlocksUri}"></script>
-				<script src="${blocklyJavascriptGeneratorUri}"></script>
-				<script src="${blocklyEnUri}"></script>
-				<script src="${scriptUri}"></script>
-			</head>
-			<body>
+                <title>WPILib Block Environment</title>
+                <script src="${blocklyUri}"></script>
+                <script src="${blocklyPythonGeneratorUri}"></script>
+                <script src="${blocklyJavaGeneratorUri}"></script>
+                <script src="${blocklyBlocksUri}"></script>
+                <script src="${blocklyEnUri}"></script>
+                <script src="${scriptUri}"></script>
+            </head>
+            <body>
                 <div id="viewport"></div>
                 <div id="blockly-workspace" style="height: 480px; width: 600px;"></div>
-			</body>
+            </body>
         </html>
         `;
         // FS.readFileSync(path.join(this.context.extensionPath, './resources/webviews/text.html')).toString();

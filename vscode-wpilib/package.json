@@ -67,6 +67,16 @@
                     }
                 ],
                 "priority": "default"
+            },
+            {
+                "viewType": "wpilibcore.blockcfg",
+                "displayName": "Block Code Environment Config",
+                "selector": [
+                    {
+                        "filenamePattern": ".blockcfg"
+                    }
+                ],
+                "priority": "default"
             }
         ],
         "untrustedWorkspaces": {
