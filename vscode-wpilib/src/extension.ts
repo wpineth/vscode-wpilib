@@ -9,6 +9,7 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { IExternalAPI } from 'vscode-wpilibapi';
+import { activateBlock } from './block/block';
 import { BuildTestAPI } from './buildtestapi';
 import { BuiltinTools } from './builtintools';
 import { CommandAPI } from './commandapi';
@@ -117,6 +118,8 @@ async function handleAfterTrusted(externalApi: ExternalAPI, context: vscode.Exte
   await activateCpp(context, externalApi);
   // Active the java parts of the extension
   await activateJava(context, externalApi);
+  // Activate the block parts of the extension
+  await activateBlock(context, externalApi);
 
   try {
     // Add built in tools

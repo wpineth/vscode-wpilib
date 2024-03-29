@@ -37,6 +37,7 @@
         "onCommand:wpilibcore.createCommand",
         "onCommand:wpilibcore.cancelTasks",
         "onCommand:wpilibcore.help",
+        "onCommand:wpilibcore.blockenv",
         "onCommand:wpilibcore.openCommandPalette",
         "onCommand:wpilibcore.refreshCppProperties",
         "onCommand:wpilibcore.selectCppToolchain",
@@ -56,6 +57,18 @@
     ],
     "main": "./out/extension",
     "contributes": {
+        "customEditors": [
+            {
+            "viewType": "wpilibcore.block",
+            "displayName": "Block Code Environment",
+            "selector": [
+              {
+                "filenamePattern": "*.block"
+              }
+            ],
+            "priority": "default"
+          }
+        ],
         "untrustedWorkspaces": {
             "supported": "limited",
             "description": "%wpilibcore.untrustedWorkspace.title%"
@@ -294,6 +307,12 @@
             {
                 "command": "wpilibcore.help",
                 "title": "%wpilibcore.help.title%",
+                "category": "WPILib",
+                "icon": "resources/wpilib.svg"
+            },
+            {
+                "command": "wpilibcore.blockenv",
+                "title": "%wpilibcore.blockenv.title%",
                 "category": "WPILib",
                 "icon": "resources/wpilib.svg"
             },
