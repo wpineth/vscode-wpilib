@@ -4,7 +4,6 @@
 // import * as path from 'path';
 import * as vscode from 'vscode';
 import { IExternalAPI } from 'vscode-wpilibapi';
-import { logger } from '../logger';
 // import { Examples } from '../shared/examples';
 // import { Templates } from '../shared/templates';
 // import { existsAsync } from '../utilities';
@@ -17,8 +16,6 @@ import { BlockEditorProvider } from './blockeditor';
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
 export async function activateBlock(context: vscode.ExtensionContext, _: IExternalAPI) {
-    logger.error('\n\n\n\n\n\n\n\nthis is a test');
-
     context.subscriptions.push(BlockEditorProvider.register(context));
 
 //   const extensionResourceLocation = path.join(context.extensionPath, 'resources', 'block');
