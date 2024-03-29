@@ -59,15 +59,15 @@
     "contributes": {
         "customEditors": [
             {
-            "viewType": "wpilibcore.block",
-            "displayName": "Block Code Environment",
-            "selector": [
-              {
-                "filenamePattern": "*.block"
-              }
-            ],
-            "priority": "default"
-          }
+                "viewType": "wpilibcore.block",
+                "displayName": "Block Code Environment",
+                "selector": [
+                    {
+                        "filenamePattern": "*.block"
+                    }
+                ],
+                "priority": "default"
+            }
         ],
         "untrustedWorkspaces": {
             "supported": "limited",
@@ -548,6 +548,7 @@
         "webpack-cli": "^3.3.12"
     },
     "dependencies": {
+        "blockly": "^10.3.1",
         "extract-zip": "^2.0.1",
         "glob": "^7.1.6",
         "java-properties": "^1.0.2",

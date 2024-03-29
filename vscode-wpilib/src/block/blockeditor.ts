@@ -34,11 +34,17 @@ export class BlockEditorProvider implements vscode.CustomTextEditorProvider {
         };
         webviewPanel.webview.html = this.getHtmlForWebview(webviewPanel.webview);
 
+        let has_loaded = false;
+
         function updateWebview() {
-            webviewPanel.webview.postMessage({
-                type: 'update',
-                text: document.getText(),
-            });
+            if(!has_loaded){
+                webviewPanel.webview.postMessage({
+                    type: 'load',
+                    text: document.getText(),
+                });
+
+                has_loaded = true;
+            }
         }
 
         // Hook up event handlers so that we can synchronize the webview with the text document.
@@ -63,16 +69,15 @@ export class BlockEditorProvider implements vscode.CustomTextEditorProvider {
         // Receive message from the webview.
         webviewPanel.webview.onDidReceiveMessage((e) => {
             switch (e.type) {
-                case 'test':
-					const edit = new vscode.WorkspaceEdit();
-			
-					// Just replace the entire document every time for this example extension.
-					// A more complete extension should compute minimal edits instead.
-					edit.replace(document.uri, new vscode.Range(document.lineCount, 0, document.lineCount, 0), `${document.lineCount}\n`);
-			
-					vscode.workspace.applyEdit(edit);
+                case 'replace':
+                    const edit = new vscode.WorkspaceEdit();
+                    // Just replace the entire document every time for this example extension.
+                    // A more complete extension should compute minimal edits instead.
+                    edit.replace(document.uri, new vscode.Range(document.lineAt(0).range.start, document.lineAt(document.lineCount - 1).range.end), e.body);
+            
+                    vscode.workspace.applyEdit(edit);
 
-					break;
+                    break;
             }
         });
 
@@ -83,6 +88,13 @@ export class BlockEditorProvider implements vscode.CustomTextEditorProvider {
      * Get the static html used for the editor webviews.
      */
     private getHtmlForWebview(webview: vscode.Webview): string {
+        // Blockly imports...
+        const blocklyUri = webview.asWebviewUri(vscode.Uri.joinPath(this.context.extensionUri, './node_modules/blockly/blockly_compressed.js'));
+        const blocklyBlocksUri = webview.asWebviewUri(vscode.Uri.joinPath(this.context.extensionUri, './node_modules/blockly/blocks_compressed.js'));
+        const blocklyJavascriptGeneratorUri = webview.asWebviewUri(vscode.Uri.joinPath(this.context.extensionUri, './node_modules/blockly/javascript_compressed.js'));
+        const blocklyEnUri = webview.asWebviewUri(vscode.Uri.joinPath(this.context.extensionUri, './node_modules/blockly/msg/en.js'));
+
+
         // Local path to script and css for the webview
         const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(this.context.extensionUri, './resources/block/block.js'));
 
@@ -102,11 +114,17 @@ export class BlockEditorProvider implements vscode.CustomTextEditorProvider {
 		<!DOCTYPE html>
         <html>
 			<head>
+                <meta http-equiv="Content-Security-Policy">
 				<title>WPILib Block Environment</title>
+				<script src="${blocklyUri}"></script>
+				<script src="${blocklyBlocksUri}"></script>
+				<script src="${blocklyJavascriptGeneratorUri}"></script>
+				<script src="${blocklyEnUri}"></script>
+				<script src="${scriptUri}"></script>
 			</head>
 			<body>
-				<div id="viewport"></div>
-				<script src="${scriptUri}"></script>
+                <div id="viewport"></div>
+                <div id="blockly-workspace" style="height: 480px; width: 600px;"></div>
 			</body>
         </html>
         `;
