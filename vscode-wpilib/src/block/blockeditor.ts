@@ -70,6 +70,8 @@ export class BlockEditorProvider implements vscode.CustomTextEditorProvider {
         webviewPanel.webview.onDidReceiveMessage((e) => {
             switch (e.type) {
                 case 'replace':
+                    console.log(e.body);
+
                     if(document.getText() !== e.body){
                         const edit = new vscode.WorkspaceEdit();
                         // Just replace the entire document every time for this example extension.
@@ -115,8 +117,9 @@ export class BlockEditorProvider implements vscode.CustomTextEditorProvider {
         // Blockly imports...
         const blocklyPythonGeneratorUri = webview.asWebviewUri(vscode.Uri.joinPath(this.context.extensionUri, './node_modules/blockly/python_compressed.js'));
         const blocklyUri = webview.asWebviewUri(vscode.Uri.joinPath(this.context.extensionUri, './node_modules/blockly/blockly_compressed.js'));
-        const blocklyJavaGeneratorUri = webview.asWebviewUri(vscode.Uri.joinPath(this.context.extensionUri, './resources/block/java.js'));
+        const blocklyProceduresUri = webview.asWebviewUri(vscode.Uri.joinPath(this.context.extensionUri, './node_modules/@blockly/block-shareable-procedures/dist/index.js'));
         const blocklyBlocksUri = webview.asWebviewUri(vscode.Uri.joinPath(this.context.extensionUri, './node_modules/blockly/blocks_compressed.js'));
+        const customBlocksUri = webview.asWebviewUri(vscode.Uri.joinPath(this.context.extensionUri, './resources/block/blocks.js'));
         const blocklyEnUri = webview.asWebviewUri(vscode.Uri.joinPath(this.context.extensionUri, './node_modules/blockly/msg/en.js'));
 
         // Local path to script and css for the webview
@@ -141,9 +144,10 @@ export class BlockEditorProvider implements vscode.CustomTextEditorProvider {
                 <meta http-equiv="Content-Security-Policy">
                 <title>WPILib Block Environment</title>
                 <script src="${blocklyUri}"></script>
+                <script src="${blocklyProceduresUri}"></script>
                 <script src="${blocklyPythonGeneratorUri}"></script>
-                <script src="${blocklyJavaGeneratorUri}"></script>
                 <script src="${blocklyBlocksUri}"></script>
+                <script src="${customBlocksUri}"></script>
                 <script src="${blocklyEnUri}"></script>
                 <script src="${scriptUri}"></script>
             </head>

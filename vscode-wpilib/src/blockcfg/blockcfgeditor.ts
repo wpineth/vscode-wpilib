@@ -88,7 +88,7 @@ export class BlockCfgEditorProvider implements vscode.CustomTextEditorProvider {
         const blocklyPythonGeneratorUri = webview.asWebviewUri(vscode.Uri.joinPath(this.context.extensionUri, './node_modules/blockly/python_compressed.js'));
         const blocklyUri = webview.asWebviewUri(vscode.Uri.joinPath(this.context.extensionUri, './node_modules/blockly/blockly_compressed.js'));
         const blocklyBlockCFGGeneratorUri = webview.asWebviewUri(vscode.Uri.joinPath(this.context.extensionUri, './resources/block/blockcfg.js'));
-        const blocklyBlocksUri = webview.asWebviewUri(vscode.Uri.joinPath(this.context.extensionUri, './resources/block/cfg/blockcfg_blocks.js'));
+        const customBlocksUri = webview.asWebviewUri(vscode.Uri.joinPath(this.context.extensionUri, './resources/block/cfg/blockcfg_blocks.js'));
         const blocklyEnUri = webview.asWebviewUri(vscode.Uri.joinPath(this.context.extensionUri, './node_modules/blockly/msg/en.js'));
 
 
@@ -104,7 +104,7 @@ export class BlockCfgEditorProvider implements vscode.CustomTextEditorProvider {
                 <script src="${blocklyUri}"></script>
                 <script src="${blocklyPythonGeneratorUri}"></script>
                 <script src="${blocklyBlockCFGGeneratorUri}"></script>
-                <script src="${blocklyBlocksUri}"></script>
+                <script src="${customBlocksUri}"></script>
                 <script src="${blocklyEnUri}"></script>
                 <script src="${scriptUri}"></script>
             </head>

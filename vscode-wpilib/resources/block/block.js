@@ -1,17 +1,24 @@
 (function () {
+    Blockly.Python.INDENT = '    ';
+
     window.addEventListener('load', () => {
         const vscode = acquireVsCodeApi();
-
-        // console.log(Object.keys(vscode));
-
-        // vscode.workspace.fs.readDirectory('./').then((files) => {
-        //     console.log(files);
-        // });
     
         const workspace = Blockly.inject('blockly-workspace', {
             toolbox: {
                 kind: 'categoryToolbox',
                 contents: [
+                    {
+                        kind: 'category',
+                        name: 'Robot',
+                        categorystyle: 'logic_category',
+                        contents: [
+                            {
+                                kind: 'block',
+                                type: 'define_command'
+                            }
+                        ]
+                    },
                   {
                     kind: 'category',
                     name: 'Logic',
@@ -885,8 +892,12 @@
             viewport.innerHTML = '';
     
             const document_contents = document.createElement('p');
+
+            document_contents.style.whiteSpace = 'pre-wrap';
+
+            document_contents.style.fontFamily = 'monospace';
     
-            document_contents.innerText = Blockly.Java.workspaceToCode(workspace);
+            document_contents.innerText = Blockly.Python.workspaceToCode(workspace);
     
             viewport.appendChild(document_contents);
         }
@@ -898,7 +909,7 @@
                 Blockly.Events.BLOCK_DELETE,
                 Blockly.Events.BLOCK_MOVE
             ].includes(e.type)){
-                const intermediate = JSON.stringify(Blockly.serialization.workspaces.save(workspace));
+                const intermediate = `${Blockly.Python.workspaceToCode(workspace)}\n\n# ${JSON.stringify(Blockly.serialization.workspaces.save(workspace))}`;
 
                 vscode.postMessage({
                     type: 'replace',
@@ -921,16 +932,18 @@
             }
         }
 
-        function updateContent(text) {
+        function updateContent(text){
+            const lines = text.split('\n');
+
             try{
                 workspace.addChangeListener(onFinishedLoading);
-                Blockly.serialization.workspaces.load(JSON.parse(text), workspace);
+                Blockly.serialization.workspaces.load(JSON.parse(lines[lines.length - 1].slice(2)), workspace);
             }catch(err){
                 workspace.addChangeListener(onChange);
                 console.log('Failed to deserialize document. Reason:', err.message);
             }
             
-            updateText();
+            updateText(lines.slice(0, lines.length - 2).join('\n'));
         }
 
         // Handle messages sent from the extension to the webview
@@ -954,7 +967,7 @@
         // Webviews are normally torn down when not visible and re-created when they become visible again.
         // State lets us save information across these re-loads
         const state = vscode.getState();
-        if (state) {
+        if(state){
             updateContent(state.text);
         }
     });
