@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import * as FS from 'fs';
+import { logger } from '../logger';
 // import * as path from 'path';
 
 export class BlockEditorProvider implements vscode.CustomTextEditorProvider {
@@ -32,18 +33,78 @@ export class BlockEditorProvider implements vscode.CustomTextEditorProvider {
         webviewPanel.webview.options = {
             enableScripts: true,
         };
-        webviewPanel.webview.html = this.getHtmlForWebview(document, webviewPanel.webview);
+        webviewPanel.webview.html = this.getHtmlForWebview(webviewPanel.webview);
 
         let has_loaded = false;
+        let loader: Promise<void> | null = null;
+
+
+        const imported: {
+            commands: string[],
+            files: string[]
+        } = {
+            commands: [],
+            files: []
+        };
 
         function updateWebview() {
-            if(!has_loaded){
-                webviewPanel.webview.postMessage({
-                    type: 'load',
-                    text: document.getText(),
-                });
+            if(!has_loaded && loader === null){
+                loader = Promise.all([
+                    new Promise<void>((resolve) => {
+                        vscode.workspace.findFiles('**/.blockcfg').then((uris) => {
+                            uris.map((uri) => uri.fsPath).sort((a, b) => b.length - a.length).filter((uri) => {
+                                return document.uri.fsPath.startsWith(uri.split('\\').slice(0, -1).join('\\'));
+                            }).forEach((uri) => {
+                                FS.readFileSync(uri).toString().split('\n').map((line) => line.trim()).filter((line) => {
+                                    return line.length > 0 && !line.startsWith('#');
+                                }).forEach((item) => {
+                                    const parts = item.split(' ');
+                
+                                    switch(parts[0]){
+                                        case 'cmd':
+                                            if(!imported.commands.includes(parts[1])){
+                                                imported.commands.push(parts[1]);
+                                            }
+                
+                                            break;
+                                    }
+                                });
 
-                has_loaded = true;
+                                resolve();
+                            });
+                        });
+                    }),
+                    new Promise<void>((resolve) => {
+                        vscode.workspace.findFiles('**/*.block').then((uris) => {
+                            const path = document.uri.fsPath.split('\\').slice(0, -1).join('\\');
+                            uris.map((uri) => uri.fsPath).filter((uri) => {
+                                return uri.startsWith(path) && uri !== document.uri.fsPath;
+                            }).forEach((uri) => {
+                                imported.files.push(...JSON.parse(FS.readFileSync(uri).toString().split('\n').pop()!.substring(2)!).blocks.blocks.filter((block: {
+                                    type: string
+                                }) => block.type === 'define_command').map((block: {
+                                    fields: {
+                                        [name: string]: string
+                                    }
+                                }) => {
+                                    return block.fields.COMMAND_NAME;
+                                }));
+                            });
+
+                            resolve();
+                        });
+                    }),
+                ]).then(() => {
+                    logger.log(`importing for ${document.uri.fsPath}: ${JSON.stringify(imported, null, 4)}`);
+
+                    webviewPanel.webview.postMessage({
+                        type: 'load',
+                        text: document.getText(),
+                        imported: imported
+                    });
+                    
+                    has_loaded = true;
+                });
             }
         }
 
@@ -70,8 +131,6 @@ export class BlockEditorProvider implements vscode.CustomTextEditorProvider {
         webviewPanel.webview.onDidReceiveMessage((e) => {
             switch (e.type) {
                 case 'replace':
-                    console.log(e.body);
-
                     if(document.getText() !== e.body){
                         const edit = new vscode.WorkspaceEdit();
                         // Just replace the entire document every time for this example extension.
@@ -92,28 +151,9 @@ export class BlockEditorProvider implements vscode.CustomTextEditorProvider {
      * Get the static html used for the editor webviews.
      */
     private getHtmlForWebview(
-        document: vscode.TextDocument,
         webview: vscode.Webview
     ): string {
-
-        vscode.workspace.findFiles('**/.blockcfg').then((uris) => {
-            const directories = uris.map((uri) => uri.fsPath.replace(/\.blockcfg$/gm, '')).sort((a, b) => b.length - a.length);
-
-            if(uris.length > 0){
-                console.log(document.uri.fsPath, directories.filter((directory) => {
-                    return document.uri.fsPath.startsWith(directory);
-                }));
-                //add defineables
-                for(let i = 0; i < uris.length; i++){
-                    const uri = uris[i];
-
-                    console.log(FS.readFileSync(uri.fsPath).toString().split('\n').map((line) => line.trim()).filter((line) => {
-                        return line.length > 0 && !line.startsWith('#');
-                    }))
-                }
-            }
-        });
-
+                
         // Blockly imports...
         const blocklyPythonGeneratorUri = webview.asWebviewUri(vscode.Uri.joinPath(this.context.extensionUri, './node_modules/blockly/python_compressed.js'));
         const blocklyUri = webview.asWebviewUri(vscode.Uri.joinPath(this.context.extensionUri, './node_modules/blockly/blockly_compressed.js'));
@@ -157,7 +197,6 @@ export class BlockEditorProvider implements vscode.CustomTextEditorProvider {
             </body>
         </html>
         `;
-        // FS.readFileSync(path.join(this.context.extensionPath, './resources/webviews/text.html')).toString();
     }
 
     /**

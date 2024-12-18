@@ -8,17 +8,21 @@
             toolbox: {
                 kind: 'categoryToolbox',
                 contents: [
-                    {
-                        kind: 'category',
-                        name: 'Robot',
-                        categorystyle: 'logic_category',
-                        contents: [
-                            {
-                                kind: 'block',
-                                type: 'define_command'
-                            }
-                        ]
-                    },
+                  {
+                      kind: 'category',
+                      name: 'Robot',
+                      categorystyle: 'logic_category',
+                      contents: [
+                          {
+                              kind: 'block',
+                              type: 'import'
+                          },
+                          {
+                              kind: 'block',
+                              type: 'define_command'
+                          }
+                      ]
+                  },
                   {
                     kind: 'category',
                     name: 'Logic',
@@ -886,6 +890,11 @@
             }
         });
 
+        let imported = {
+          commands: [],
+          files: []
+        };
+
         function updateText(){
             const viewport = document.querySelector('#viewport');
     
@@ -933,6 +942,8 @@
         }
 
         function updateContent(text){
+            make_blocks(imported);
+            
             const lines = text.split('\n');
 
             try{
@@ -951,6 +962,10 @@
             const message = e.data; // The json data that the extension sent
             switch (message.type) {
                 case 'load':
+                    imported = message.imported;
+
+                    console.log('imported stuff:', imported);
+
                     // Update our webview's content
                     updateContent(message.text);
     
